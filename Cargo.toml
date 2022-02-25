@@ -4,7 +4,7 @@ version = "0.1.2"
 edition = "2021"
 license = "MIT"
 description = "i18n localization library"
-git = "https://github.com/azizka85/azizka_rust_i18n.git"
+homepage = "https://github.com/azizka85/azizka_rust_i18n.git"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
