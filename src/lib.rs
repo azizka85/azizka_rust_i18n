@@ -3,46 +3,50 @@ mod tests;
 
 use std::collections::HashMap;
 
-#[derive(Debug, Clone)]
-pub enum Value {
-	Single(String),
-	List(Vec<(Option<i64>, Option<i64>, String)>),
-	Map(HashMap<String, String>)
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Value<'a> {
+	Single(&'a str),
+	List(Vec<(Option<i64>, Option<i64>, &'a str)>),
+	Map(HashMap<&'a str, &'a str>)
 }
 
-#[derive(Debug, Clone)]
-pub enum NumOrFormatting {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum NumOrFormatting<'a> {
 	Number(i64),
-	Formatting(HashMap<String, String>)
+	#[serde(borrow)]
+	Formatting(HashMap<&'a str, &'a str>)
 }
 
-#[derive(Debug, Clone)]
-pub struct ContextOptions {
-	pub matches: HashMap<String, String>,
-	pub values: HashMap<String, Value>
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContextOptions<'a> {
+	#[serde(borrow)]
+	pub matches: HashMap<&'a str, &'a str>,
+	#[serde(borrow)]
+	pub values: HashMap<&'a str, Value<'a>>
 }
 
-#[derive(Debug, Clone)]
-pub struct DataOptions {
-	pub values: Option<HashMap<String, Value>>,
-	pub contexts: Option<Vec<ContextOptions>>    
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DataOptions<'a> {
+	#[serde(borrow)]
+	pub values: Option<HashMap<&'a str, Value<'a>>>,
+	#[serde(borrow)]
+	pub contexts: Option<Vec<ContextOptions<'a>>>    
 }
 
-#[derive(Clone)]
-pub struct Translator {
-	data: Option<DataOptions>,
-	global_context: HashMap<String, String>,
-
-	extension: Option<fn(
-		text: &String,
-		num: Option<&i64>,
-		formatting: Option<&HashMap<String, String>>,
-		data: Option<&HashMap<String, String>>	
-	) -> String>
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Translator<'a> {
+	#[serde(borrow)]
+	data: Option<DataOptions<'a>>,
+	#[serde(borrow)]
+	global_context: HashMap<&'a str, &'a str>
 }
 
-impl Translator {
-	pub fn add(&mut self, data: &DataOptions) {
+impl<'a> Translator<'a> {
+	pub fn add<'b>(&mut self, data: &'b DataOptions<'a>) {
 		if let Some(self_data) = &mut self.data {
 			if let Some(data_values) = &data.values {
 				match &mut self_data.values {
@@ -80,11 +84,11 @@ impl Translator {
 		}
 	}
 
-	pub fn set_context(&mut self, key: &String, value: &String) {
+	pub fn set_context(&mut self, key: &'a str, value: &'a str) {
 		self.global_context.insert(key.clone(), value.clone());
 	}
 
-	pub fn clear_context(&mut self, key: &String) {
+	pub fn clear_context(&mut self, key: &'a str) {
 		self.global_context.remove(key);
 	}
 
@@ -101,24 +105,18 @@ impl Translator {
 		self.reset_context();
 	}
 
-	pub fn extend(
-		&mut self, 
-		extension: fn(
-			text: &String,
-			num: Option<&i64>,
-			formatting: Option<&HashMap<String, String>>,
-			data: Option<&HashMap<String, String>>
-		) -> String
-	) {
-		self.extension = Some(extension);
-	}
-
-	pub fn translate(
-		&self,
-		text: &String,
-		default_num_or_formatting: Option<&NumOrFormatting>,
-		num_or_formatting_or_context: Option<&NumOrFormatting>,
-		formatting_or_context: Option<&HashMap<String, String>>
+	pub fn translate<'b>(
+		&'a self,
+		text: &'b str,
+		default_num_or_formatting: Option<&'b NumOrFormatting<'a>>,
+		num_or_formatting_or_context: Option<&'b NumOrFormatting<'a>>,
+		formatting_or_context: Option<&'b HashMap<&'a str, &'a str>>,
+		extension: Option<fn(
+			text: &'b str,
+			num: Option<i64>,
+			formatting: Option<&'b HashMap<&'a str, &'a str>>,
+			data: Option<&'a HashMap<&'a str, &'a str>>	
+		) -> String>
 	) -> String {
 		let mut num = None;
 		let mut formatting = None;
@@ -136,7 +134,7 @@ impl Translator {
 					}
 				},
 				NumOrFormatting::Number(default_num) => {
-					num = Some(default_num);
+					num = Some(*default_num);
 
 					if let Some(num_or_formatting_or_context_val) = num_or_formatting_or_context {
 						if let NumOrFormatting::Formatting(default_formatting) = num_or_formatting_or_context_val {
@@ -152,7 +150,7 @@ impl Translator {
 		} else if let Some(num_or_formatting_or_context_val) = num_or_formatting_or_context {
 			match &num_or_formatting_or_context_val {
 				NumOrFormatting::Number(default_num) => {
-					num = Some(default_num);
+					num = Some(*default_num);
 					formatting = formatting_or_context;
 				},
 				&NumOrFormatting::Formatting(default_formatting) => {
@@ -165,20 +163,22 @@ impl Translator {
 			}			
 		}
 
-		return self.translate_text(text, num, formatting, Some(context));
+		return self.translate_text(text, num, formatting, context, extension);
 	}
 
-	pub fn translate_text(
-		&self, 
-		text: &String,
-		num: Option<&i64>,
-		formatting: Option<&HashMap<String, String>>,
-		context: Option<&HashMap<String, String>>
+	pub fn translate_text<'b>(
+		&'a self, 
+		text: &'b str,
+		num: Option<i64>,
+		formatting: Option<&'b HashMap<&'a str, &'a str>>,
+		context: &'b HashMap<&'a str, &'a str>,
+		extension: Option<fn(
+			text: &'b str,
+			num: Option<i64>,
+			formatting: Option<&'b HashMap<&'a str, &'a str>>,
+			data: Option<&'a HashMap<&'a str, &'a str>>	
+		) -> String>
 	) -> String {
-		let context = 
-			if let Some(default_context) = context { default_context }
-			else { &self.global_context };
-
 		match &self.data {
 			Some(data) => {
 				let context_data = get_context_data(data, context);
@@ -187,14 +187,26 @@ impl Translator {
 				let mut text_is_null = true;
 
 				if let Some(context_data) = context_data {
-					if let Some(text) = self.find_translation(text, num, formatting, Some(&context_data.values)) {
+					if let Some(text) = self.find_translation(
+						text, 
+						num, 
+						formatting, 
+						Some(&context_data.values),
+						extension
+					) {
 						text_val = text;
 						text_is_null = false;
 					}
 				}
 
 				if text_is_null {
-					if let Some(text) = self.find_translation(text, num, formatting, data.values.as_ref()) {
+					if let Some(text) = self.find_translation(
+						text, 
+						num, 
+						formatting, 
+						data.values.as_ref(),
+						extension
+					) {
 						text_val = text;
 						text_is_null = false;
 					}
@@ -210,22 +222,28 @@ impl Translator {
 		}		
 	}
 
-	pub fn find_translation(
+	pub fn find_translation<'b>(
 		&self,
-		text: &String,
-		num: Option<&i64>,
-		formatting: Option<&HashMap<String, String>>,
-		data: Option<&HashMap<String, Value>>
+		text: &'b str,
+		num: Option<i64>,
+		formatting: Option<&'b HashMap<&'a str, &'a str>>,
+		data: Option<&'a HashMap<&'a str, Value>>,
+		extension: Option<fn(
+			text: &'b str,
+			num: Option<i64>,
+			formatting: Option<&'b HashMap<&'a str, &'a str>>,
+			data: Option<&'a HashMap<&'a str, &'a str>>	
+		) -> String>
 	) -> Option<String> {
 		let value = data?.get(text)?;
 
 		match value {
 			Value::Single(value) => Some(apply_formatting(value, formatting)),
 			Value::Map(value) => {
-				match self.extension {
+				match extension {
 					Some(func) => {
 						let text = func(text, num, formatting, Some(value));
-						let text = apply_numbers(&text, if let Some(num) = num { num } else { &0 });
+						let text = apply_numbers(&text, if let Some(num) = num { num } else { 0 });
 
 						Some(apply_formatting(&text, formatting))
 					},
@@ -239,7 +257,7 @@ impl Translator {
 				let mut num_is_null = true;
 
 				if let Some(num) = num {
-					num_val = *num;
+					num_val = num;
 					num_is_null = false;
 				}
 
@@ -265,7 +283,7 @@ impl Translator {
 							!low_is_null && num_val >= low && (high_is_null || num_val <= high) ||
 							low_is_null && !high_is_null && num_val <= high
 					) {
-						let text = apply_numbers(&triple.2, &num_val);
+						let text = apply_numbers(&triple.2, num_val);
 
 						return Some(apply_formatting(&text, formatting));
 					}
@@ -276,11 +294,10 @@ impl Translator {
 		}
 	}
 
-	pub fn create(data: &DataOptions) -> Translator {
+	pub fn create<'b>(data: &'b DataOptions<'a>) -> Translator<'a> {
 		let mut translator = Translator {
 			data: None,
-			global_context: HashMap::new(),
-			extension: None
+			global_context: HashMap::new()
 		};
 
 		translator.add(data);
@@ -289,14 +306,14 @@ impl Translator {
 	}
 }
 
-pub fn apply_numbers(str: &String, num: &i64) -> String {
+pub fn apply_numbers<'a>(str: &'a str, num: i64) -> String {
 	let str = str.replace("-%n", &(-num).to_string());
 
 	return str.replace("%n", &num.to_string());
 }
 
-pub fn apply_formatting(text: &String, formatting: Option<&HashMap<String, String>>) -> String {
-	let mut text = text.clone();
+pub fn apply_formatting<'a>(text: &'a str, formatting: Option<&'a HashMap<&'a str, &'a str>>) -> String {
+	let mut text = String::from(text);
 
 	if let Some(formatting) = formatting {
 		for (key, value) in formatting {				
@@ -307,7 +324,7 @@ pub fn apply_formatting(text: &String, formatting: Option<&HashMap<String, Strin
 	return text;
 }
 
-pub fn get_context_data<'a>(data: &'a DataOptions, context: &HashMap<String, String>) -> Option<&'a ContextOptions> {
+pub fn get_context_data<'a, 'b>(data: &'a DataOptions<'a>, context: &'b HashMap<&'a str, &'a str>) -> Option<&'a ContextOptions<'a>> {
 	for ctx in data.contexts.as_ref()? {
 		let mut equal = true;
 
@@ -327,7 +344,7 @@ pub fn get_context_data<'a>(data: &'a DataOptions, context: &HashMap<String, Str
 	return None;
 }
 
-pub fn use_original_text(text: &String, num: Option<&i64>, formatting: Option<&HashMap<String, String>>) -> String {
+pub fn use_original_text<'a>(text: &'a str, num: Option<i64>, formatting: Option<&'a HashMap<&'a str, &'a str>>) -> String {
 	match num {
 		Some(num) => apply_formatting(&text.replace("%n", &num.to_string()), formatting),
 		None => apply_formatting(text, formatting)
