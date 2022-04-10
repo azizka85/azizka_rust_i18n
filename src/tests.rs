@@ -5,23 +5,24 @@ use crate::{Translator, DataOptions, Value, NumOrFormatting, ContextOptions};
 #[test]
 fn translate_hello() {
   let key = "Hello";
-  let value = "Hello translated";
+  let value = "Hello translated";  
 
-  let values = HashMap::from([
-    (key.clone(), Value::Single(value.clone()))
-  ]);  
-
-  let translator = Translator::create(&DataOptions {
-    contexts: None,
-    values: Some(values)
-  });
+  let translator = Translator::create(
+    &DataOptions {
+      contexts: None,
+      values: Some(
+        HashMap::from([
+          (key.clone(), Value::Single(value.clone()))
+        ])
+      )
+    }
+  );
 
   let actual = translator.translate(
     &key, 
     None, 
     None, 
-    None,
-    None
+    None    
   );
 
   assert_eq!(actual, value);
@@ -36,25 +37,26 @@ fn translate_plural_text() {
   let two_comments = "2 comments";
   let ten_comments = "10 comments";
 
-  let values = HashMap::from([
-    (key.clone(), Value::List(vec![
-      (Some(0), Some(0), "%n comments"),
-      (Some(1), Some(1), "%n comment"),
-      (Some(2), None, "%n comments")
-    ]))
-  ]);
-
   let translator = Translator::create(&DataOptions {
     contexts: None,
-    values: Some(values)
+    values: Some(
+      HashMap::from([
+        (key.clone(), Value::List(
+          vec![
+            (Some(0), Some(0), "%n comments"),
+            (Some(1), Some(1), "%n comment"),
+            (Some(2), None, "%n comments")
+          ]
+        ))
+      ])
+    )
   });
 
   let actual = translator.translate(
     &key, 
     Some(&NumOrFormatting::Number(0)), 
     None, 
-    None,
-    None
+    None    
   );
 
   assert_eq!(actual, zero_comments);
@@ -63,7 +65,6 @@ fn translate_plural_text() {
     &key, 
     Some(&NumOrFormatting::Number(1)), 
     None, 
-    None,
     None
   );
 
@@ -73,7 +74,6 @@ fn translate_plural_text() {
     &key, 
     Some(&NumOrFormatting::Number(2)), 
     None, 
-    None,
     None
   );
 
@@ -83,7 +83,6 @@ fn translate_plural_text() {
     &key, 
     Some(&NumOrFormatting::Number(10)), 
     None, 
-    None,
     None
   );
 
@@ -102,27 +101,28 @@ fn translate_plural_text_with_negative_number() {
   let due_in_two_days = "Due in 2 days";
   let due_in_ten_days = "Due in 10 days";
 
-  let values = HashMap::from([
-    (key.clone(), Value::List(vec![
-      (None, Some(-2), "Due -%n days ago"),
-      (Some(-1), Some(-1), "Due Yesterday"),
-      (Some(0), Some(0), "Due Today"),
-      (Some(1), Some(1), "Due Tomorrow"),
-      (Some(2), None, "Due in %n days")
-    ]))
-  ]);
-
   let translator = Translator::create(&DataOptions {
     contexts: None,
-    values: Some(values)
+    values: Some(
+      HashMap::from([
+        (key.clone(), Value::List(
+          vec![
+            (None, Some(-2), "Due -%n days ago"),
+            (Some(-1), Some(-1), "Due Yesterday"),
+            (Some(0), Some(0), "Due Today"),
+            (Some(1), Some(1), "Due Tomorrow"),
+            (Some(2), None, "Due in %n days")
+          ]
+        ))
+      ])
+    )
   });
 
   let actual = translator.translate(
     &key, 
     Some(&NumOrFormatting::Number(-10)),
     None,
-    None,
-    None
+    None    
   );
 
   assert_eq!(actual, due_ten_days_ago);
@@ -130,8 +130,7 @@ fn translate_plural_text_with_negative_number() {
   let actual = translator.translate(&key, 
     Some(&NumOrFormatting::Number(-2)), 
     None, 
-    None,
-    None
+    None    
   );
 
   assert_eq!(actual, due_two_days_ago);
@@ -140,8 +139,7 @@ fn translate_plural_text_with_negative_number() {
     &key, 
     Some(&NumOrFormatting::Number(-1)), 
     None, 
-    None,
-    None
+    None    
   );
 
   assert_eq!(actual, due_yesterday);
@@ -150,7 +148,6 @@ fn translate_plural_text_with_negative_number() {
     &key, 
     Some(&NumOrFormatting::Number(0)), 
     None, 
-    None,
     None
   );
 
@@ -160,8 +157,7 @@ fn translate_plural_text_with_negative_number() {
     &key, 
     Some(&NumOrFormatting::Number(1)), 
     None, 
-    None,
-    None
+    None    
   );
 
   assert_eq!(actual, due_tomorrow);
@@ -170,8 +166,7 @@ fn translate_plural_text_with_negative_number() {
     &key, 
     Some(&NumOrFormatting::Number(2)), 
     None, 
-    None,
-    None
+    None    
   );
 
   assert_eq!(actual, due_in_two_days);
@@ -180,8 +175,7 @@ fn translate_plural_text_with_negative_number() {
     &key, 
     Some(&NumOrFormatting::Number(10)), 
     None, 
-    None,
-    None
+    None    
   );
 
   assert_eq!(actual, due_in_ten_days);
@@ -192,19 +186,24 @@ fn translate_text_with_formatting() {
   let key = "Welcome %{name}";
   let value = "Welcome John";
 
-  let translator = Translator::create(&DataOptions {
-    contexts: None,
-    values: None
-  });
+  let translator = Translator::create(
+    &DataOptions {
+      contexts: None,
+      values: None
+    }
+  );
 
   let actual = translator.translate(
     &key, 
-    Some(&NumOrFormatting::Formatting(HashMap::from([
-      ("name", "John")
-    ]))), 
+    Some(
+      &NumOrFormatting::Formatting(
+        HashMap::from([
+          ("name", "John")
+        ])
+      )
+    ), 
     None, 
-    None,
-    None
+    None    
   );
 
   assert_eq!(actual, value);
@@ -215,63 +214,75 @@ fn translate_text_using_contexts() {
   let key = "%{name} updated their profile";
 
   let john_value = "John updated his profile";
-  let jane_value = "Jane updated her profile";
+  let jane_value = "Jane updated her profile";  
 
-  let male_values = HashMap::from([
-    (key.clone(), Value::Single("%{name} updated his profile"))
-  ]);
-
-  let female_values = HashMap::from([
-    (key.clone(), Value::Single("%{name} updated her profile"))
-  ]);
-
-  let contexts = vec![
-    ContextOptions {
-      matches: HashMap::from([
-        ("gender", "male")
-      ]),
-      values: male_values
-    },
-    ContextOptions {
-      matches: HashMap::from([
-        ("gender", "female")
-      ]),
-      values: female_values
+  let translator = Translator::create(
+    &DataOptions {
+      contexts: Some(
+        vec![
+          ContextOptions {
+            matches: HashMap::from([
+              ("gender", "male")
+            ]),
+            values: HashMap::from([
+              (key.clone(), Value::Single("%{name} updated his profile"))
+            ])
+          },
+          ContextOptions {
+            matches: HashMap::from([
+              ("gender", "female")
+            ]),
+            values: HashMap::from([
+              (key.clone(), Value::Single("%{name} updated her profile"))
+            ])
+          }
+        ]
+      ),
+      values: None
     }
-  ];
-
-  let translator = Translator::create(&DataOptions {
-    contexts: Some(contexts),
-    values: None
-  });
-
-  let actual = translator.translate(
-    &key, 
-    Some(&NumOrFormatting::Formatting(HashMap::from([
-      ("name", "John")
-    ]))), 
-    Some(&NumOrFormatting::Formatting(HashMap::from([
-      ("gender", "male")
-    ]))), 
-    None,
-    None
   );
 
-  assert_eq!(actual, john_value);
-
-  let actual = translator.translate(
-    &key, 
-    Some(&NumOrFormatting::Formatting(HashMap::from([
-      ("name", "Jane")
-    ]))), 
-    Some(&NumOrFormatting::Formatting(HashMap::from([
-      ("gender", "female")
-    ]))), 
-    None,
-    None
+  let (actual_john, actual_jane) = (
+    translator.translate(
+      &key, 
+      Some(
+        &NumOrFormatting::Formatting(
+          HashMap::from([
+            ("name", "John")
+          ])
+        )
+      ), 
+      Some(
+        &NumOrFormatting::Formatting(
+          HashMap::from([
+            ("gender", "male")
+          ])
+        )
+      ), 
+      None    
+    ),
+    translator.translate(
+      &key, 
+      Some(
+        &NumOrFormatting::Formatting(
+          HashMap::from([
+            ("name", "Jane")
+          ])
+        )
+      ), 
+      Some(
+        &NumOrFormatting::Formatting(
+          HashMap::from([
+            ("gender", "female")
+          ])
+        )
+      ), 
+      None
+    )
   );
 
-  assert_eq!(actual, jane_value);
+  assert_eq!(actual_john, john_value);
+  assert_eq!(actual_jane, jane_value);
 }
 
 #[test]
@@ -281,67 +292,79 @@ fn translate_plural_text_using_contexts() {
   let john_value = "John uploaded 1 photo to his Buck's Night album";
   let jane_value = "Jane uploaded 4 photos to her Hen's Night album";
 
-  let male_values = HashMap::from([
-    (key.clone(), Value::List(vec![
-      (Some(0), Some(0), "%{name} uploaded %n photos to his %{album} album"),
-      (Some(1), Some(1), "%{name} uploaded %n photo to his %{album} album"),
-      (Some(2), None, "%{name} uploaded %n photos to his %{album} album")
-    ]))
-  ]);
-
-  let female_values = HashMap::from([
-    (key.clone(), Value::List(vec![
-      (Some(0), Some(0), "%{name} uploaded %n photos to her %{album} album"),
-      (Some(1), Some(1), "%{name} uploaded %n photo to her %{album} album"),
-      (Some(2), None, "%{name} uploaded %n photos to her %{album} album")
-    ]))
-  ]);
-
-  let contexts = vec![
-    ContextOptions {
-      matches: HashMap::from([("gender", "male")]),
-      values: male_values
-    },
-    ContextOptions {
-      matches: HashMap::from([("gender", "female")]),
-      values: female_values
+  let translator = Translator::create(
+    &DataOptions {
+      contexts: Some(
+        vec![
+          ContextOptions {
+            matches: HashMap::from([("gender", "male")]),
+            values: HashMap::from([
+              (key.clone(), Value::List(
+                vec![
+                  (Some(0), Some(0), "%{name} uploaded %n photos to his %{album} album"),
+                  (Some(1), Some(1), "%{name} uploaded %n photo to his %{album} album"),
+                  (Some(2), None, "%{name} uploaded %n photos to his %{album} album")
+                ]
+              ))
+            ])
+          },
+          ContextOptions {
+            matches: HashMap::from([("gender", "female")]),
+            values: HashMap::from([
+              (key.clone(), Value::List(
+                vec![
+                  (Some(0), Some(0), "%{name} uploaded %n photos to her %{album} album"),
+                  (Some(1), Some(1), "%{name} uploaded %n photo to her %{album} album"),
+                  (Some(2), None, "%{name} uploaded %n photos to her %{album} album")
+                ]
+              ))
+            ])
+          }
+        ]
+      ),
+      values: None
     }
-  ];
-
-  let translator = Translator::create(&DataOptions {
-    contexts: Some(contexts),
-    values: None
-  });
-
-  let actual = translator.translate(
-    &key, 
-    Some(&NumOrFormatting::Number(1)), 
-    Some(&NumOrFormatting::Formatting(HashMap::from([
-      ("name", "John"),
-      ("album", "Buck's Night")
-    ]))), 
-    Some(&HashMap::from([
-      ("gender", "male")
-    ])),
-    None
   );
 
-  assert_eq!(actual, john_value);
-
-  let actual = translator.translate(
-    &key, 
-    Some(&NumOrFormatting::Number(4)), 
-    Some(&NumOrFormatting::Formatting(HashMap::from([
-      ("name", "Jane"),
-      ("album", "Hen's Night")
-    ]))), 
-    Some(&HashMap::from([
-      ("gender", "female")
-    ])),
-    None
+  let (actual_john, actual_jane) = (
+    translator.translate(
+      &key, 
+      Some(&NumOrFormatting::Number(1)), 
+      Some(
+        &NumOrFormatting::Formatting(
+          HashMap::from([
+            ("name", "John"),
+            ("album", "Buck's Night")
+          ])
+        )
+      ), 
+      Some(
+        &HashMap::from([
+          ("gender", "male")
+        ])
+      )    
+    ),
+    translator.translate(
+      &key, 
+      Some(&NumOrFormatting::Number(4)), 
+      Some(
+        &NumOrFormatting::Formatting(
+          HashMap::from([
+            ("name", "Jane"),
+            ("album", "Hen's Night")
+          ])
+        )
+      ), 
+      Some(
+        &HashMap::from([
+          ("gender", "female")
+        ])
+      )    
+    )
   );
 
-  assert_eq!(actual, jane_value);
+  assert_eq!(actual_john, john_value);
+  assert_eq!(actual_jane, jane_value);
 }
 
 #[test]
@@ -354,22 +377,24 @@ fn translate_plural_text_using_extension() {
   let four_results = "4 результата";
   let results = "101 результат";
 
-  let data = HashMap::from([
-    ("zero", "нет результатов"),
-    ("one", "%n результат"),
-    ("few", "%n результата"),
-    ("many", "%n результатов"),
-    ("other", "%n результаты")
-  ]);
-
-  let values = HashMap::from([
-    (key.clone(), Value::Map(data))
-  ]);
-
-  let mut translator = Translator::create(&DataOptions {
-    contexts: None,
-    values: Some(values)
-  });
+  let mut translator = Translator::create(
+    &DataOptions {
+      contexts: None,
+      values: Some(
+        HashMap::from([
+          (key.clone(), Value::Map(
+            HashMap::from([
+              ("zero", "нет результатов"),
+              ("one", "%n результат"),
+              ("few", "%n результата"),
+              ("many", "%n результатов"),
+              ("other", "%n результаты")
+            ])
+          ))
+        ])
+      )
+    }
+  );
 
   fn russian_extension(
     _: &str, 
@@ -399,12 +424,13 @@ fn translate_plural_text_using_extension() {
     }
   }
 
+  translator.extend(russian_extension);
+
   let actual = translator.translate(
     &key, 
     Some(&NumOrFormatting::Number(0)), 
     None, 
-    None,
-    Some(russian_extension)
+    None
   );
 
   assert_eq!(actual, zero_results);
@@ -413,8 +439,7 @@ fn translate_plural_text_using_extension() {
     &key, 
     Some(&NumOrFormatting::Number(1)), 
     None, 
-    None,
-    Some(russian_extension)
+    None
   );
 
   assert_eq!(actual, one_result);
@@ -423,8 +448,7 @@ fn translate_plural_text_using_extension() {
     &key, 
     Some(&NumOrFormatting::Number(11)), 
     None, 
-    None,
-    Some(russian_extension)
+    None
   );
 
   assert_eq!(actual, eleven_results);
@@ -433,8 +457,7 @@ fn translate_plural_text_using_extension() {
     &key, 
     Some(&NumOrFormatting::Number(4)), 
     None, 
-    None,
-    Some(russian_extension)
+    None
   );
 
   assert_eq!(actual, four_results);
@@ -443,8 +466,7 @@ fn translate_plural_text_using_extension() {
     &key, 
     Some(&NumOrFormatting::Number(101)), 
     None, 
-    None,
-    Some(russian_extension)
+    None
   );
 
   assert_eq!(actual, results);
