@@ -20,9 +20,9 @@ fn translate_hello() {
 
   let actual = translator.translate(
     &key, 
-    None, 
-    None, 
-    None    
+    &None, 
+    &None, 
+    &None    
   );
 
   assert_eq!(actual, value);
@@ -54,36 +54,36 @@ fn translate_plural_text() {
 
   let actual = translator.translate(
     &key, 
-    Some(&NumOrFormatting::Number(0)), 
-    None, 
-    None    
+    &Some(NumOrFormatting::Number(0)), 
+    &None, 
+    &None    
   );
 
   assert_eq!(actual, zero_comments);
 
   let actual = translator.translate(
     &key, 
-    Some(&NumOrFormatting::Number(1)), 
-    None, 
-    None
+    &Some(NumOrFormatting::Number(1)), 
+    &None, 
+    &None
   );
 
   assert_eq!(actual, one_comment);
 
   let actual = translator.translate(
     &key, 
-    Some(&NumOrFormatting::Number(2)), 
-    None, 
-    None
+    &Some(NumOrFormatting::Number(2)), 
+    &None, 
+    &None
   );
 
   assert_eq!(actual, two_comments);
 
   let actual = translator.translate(
     &key, 
-    Some(&NumOrFormatting::Number(10)), 
-    None, 
-    None
+    &Some(NumOrFormatting::Number(10)), 
+    &None, 
+    &None
   );
 
   assert_eq!(actual, ten_comments);
@@ -120,62 +120,62 @@ fn translate_plural_text_with_negative_number() {
 
   let actual = translator.translate(
     &key, 
-    Some(&NumOrFormatting::Number(-10)),
-    None,
-    None    
+    &Some(NumOrFormatting::Number(-10)),
+    &None,
+    &None    
   );
 
   assert_eq!(actual, due_ten_days_ago);
 
   let actual = translator.translate(&key, 
-    Some(&NumOrFormatting::Number(-2)), 
-    None, 
-    None    
+    &Some(NumOrFormatting::Number(-2)), 
+    &None, 
+    &None    
   );
 
   assert_eq!(actual, due_two_days_ago);
 
   let actual = translator.translate(
     &key, 
-    Some(&NumOrFormatting::Number(-1)), 
-    None, 
-    None    
+    &Some(NumOrFormatting::Number(-1)), 
+    &None, 
+    &None    
   );
 
   assert_eq!(actual, due_yesterday);
 
   let actual = translator.translate(
     &key, 
-    Some(&NumOrFormatting::Number(0)), 
-    None, 
-    None
+    &Some(NumOrFormatting::Number(0)), 
+    &None, 
+    &None
   );
 
   assert_eq!(actual, due_today);
 
   let actual = translator.translate(
     &key, 
-    Some(&NumOrFormatting::Number(1)), 
-    None, 
-    None    
+    &Some(NumOrFormatting::Number(1)), 
+    &None, 
+    &None    
   );
 
   assert_eq!(actual, due_tomorrow);
 
   let actual = translator.translate(
     &key, 
-    Some(&NumOrFormatting::Number(2)), 
-    None, 
-    None    
+    &Some(NumOrFormatting::Number(2)), 
+    &None, 
+    &None    
   );
 
   assert_eq!(actual, due_in_two_days);
 
   let actual = translator.translate(
     &key, 
-    Some(&NumOrFormatting::Number(10)), 
-    None, 
-    None    
+    &Some(NumOrFormatting::Number(10)), 
+    &None, 
+    &None    
   );
 
   assert_eq!(actual, due_in_ten_days);
@@ -195,15 +195,15 @@ fn translate_text_with_formatting() {
 
   let actual = translator.translate(
     &key, 
-    Some(
-      &NumOrFormatting::Formatting(
+    &Some(
+      NumOrFormatting::Formatting(
         HashMap::from([
           ("name", "John")
         ])
       )
     ), 
-    None, 
-    None    
+    &None, 
+    &None    
   );
 
   assert_eq!(actual, value);
@@ -242,47 +242,55 @@ fn translate_text_using_contexts() {
     }
   );
 
-  let (actual_john, actual_jane) = (
-    translator.translate(
-      &key, 
-      Some(
-        &NumOrFormatting::Formatting(
-          HashMap::from([
-            ("name", "John")
-          ])
-        )
-      ), 
-      Some(
-        &NumOrFormatting::Formatting(
-          HashMap::from([
-            ("gender", "male")
-          ])
-        )
-      ), 
-      None    
-    ),
-    translator.translate(
-      &key, 
-      Some(
-        &NumOrFormatting::Formatting(
-          HashMap::from([
-            ("name", "Jane")
-          ])
-        )
-      ), 
-      Some(
-        &NumOrFormatting::Formatting(
-          HashMap::from([
-            ("gender", "female")
-          ])
-        )
-      ), 
-      None
+  let john_formatting = &Some(
+    NumOrFormatting::Formatting(
+      HashMap::from([
+        ("name", "John")
+      ])
     )
   );
 
-  assert_eq!(actual_john, john_value);
-  assert_eq!(actual_jane, jane_value);
+  let john_context = &Some(
+    NumOrFormatting::Formatting(
+      HashMap::from([
+        ("gender", "male")
+      ])
+    )
+  );
+
+  let actual = translator.translate(
+    &key, 
+    john_formatting, 
+    john_context, 
+    &None    
+  );
+
+  assert_eq!(actual, john_value);
+
+  let jane_formatting = &Some(
+    NumOrFormatting::Formatting(
+      HashMap::from([
+        ("name", "Jane")
+      ])
+    )
+  );
+
+  let jane_context = &Some(
+    NumOrFormatting::Formatting(
+      HashMap::from([
+        ("gender", "female")
+      ])
+    )
+  );
+
+  let actual = translator.translate(
+    &key, 
+    jane_formatting, 
+    jane_context, 
+    &None
+  );
+
+  assert_eq!(actual, jane_value);
 }
 
 #[test]
@@ -326,45 +334,53 @@ fn translate_plural_text_using_contexts() {
     }
   );
 
-  let (actual_john, actual_jane) = (
-    translator.translate(
-      &key, 
-      Some(&NumOrFormatting::Number(1)), 
-      Some(
-        &NumOrFormatting::Formatting(
-          HashMap::from([
-            ("name", "John"),
-            ("album", "Buck's Night")
-          ])
-        )
-      ), 
-      Some(
-        &HashMap::from([
-          ("gender", "male")
-        ])
-      )    
-    ),
-    translator.translate(
-      &key, 
-      Some(&NumOrFormatting::Number(4)), 
-      Some(
-        &NumOrFormatting::Formatting(
-          HashMap::from([
-            ("name", "Jane"),
-            ("album", "Hen's Night")
-          ])
-        )
-      ), 
-      Some(
-        &HashMap::from([
-          ("gender", "female")
-        ])
-      )    
+  let john_formatting = &Some(
+    NumOrFormatting::Formatting(
+      HashMap::from([
+        ("name", "John"),
+        ("album", "Buck's Night")
+      ])
     )
   );
 
-  assert_eq!(actual_john, john_value);
-  assert_eq!(actual_jane, jane_value);
+  let john_context = &Some(
+    HashMap::from([
+      ("gender", "male")
+    ])
+  );
+
+  let actual = translator.translate(
+    &key, 
+    &Some(NumOrFormatting::Number(1)), 
+    john_formatting, 
+    john_context        
+  );  
+
+  assert_eq!(actual, john_value);
+
+  let jane_formatting = &Some(
+    NumOrFormatting::Formatting(
+      HashMap::from([
+        ("name", "Jane"),
+        ("album", "Hen's Night")
+      ])
+    )
+  );
+
+  let jane_context = &Some(
+    HashMap::from([
+      ("gender", "female")
+    ])
+  );
+
+  let actual = translator.translate(
+    &key, 
+    &Some(NumOrFormatting::Number(4)), 
+    jane_formatting, 
+    jane_context
+  );
+
+  assert_eq!(actual, jane_value);
 }
 
 #[test]
@@ -428,45 +444,45 @@ fn translate_plural_text_using_extension() {
 
   let actual = translator.translate(
     &key, 
-    Some(&NumOrFormatting::Number(0)), 
-    None, 
-    None
+    &Some(NumOrFormatting::Number(0)), 
+    &None, 
+    &None
   );
 
   assert_eq!(actual, zero_results);
 
   let actual = translator.translate(
     &key, 
-    Some(&NumOrFormatting::Number(1)), 
-    None, 
-    None
+    &Some(NumOrFormatting::Number(1)), 
+    &None, 
+    &None
   );
 
   assert_eq!(actual, one_result);
 
   let actual = translator.translate(
     &key, 
-    Some(&NumOrFormatting::Number(11)), 
-    None, 
-    None
+    &Some(NumOrFormatting::Number(11)), 
+    &None, 
+    &None
   );
 
   assert_eq!(actual, eleven_results);
 
   let actual = translator.translate(
     &key, 
-    Some(&NumOrFormatting::Number(4)), 
-    None, 
-    None
+    &Some(NumOrFormatting::Number(4)), 
+    &None, 
+    &None
   );
 
   assert_eq!(actual, four_results);
 
   let actual = translator.translate(
     &key, 
-    Some(&NumOrFormatting::Number(101)), 
-    None, 
-    None
+    &Some(NumOrFormatting::Number(101)), 
+    &None, 
+    &None
   );
 
   assert_eq!(actual, results);

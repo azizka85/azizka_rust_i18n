@@ -38,7 +38,7 @@ pub struct DataOptions<'a> {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Translator<'a, 'b> {
+pub struct Translator<'a> {
 	#[serde(borrow)]
 	data: Option<DataOptions<'a>>,
 	#[serde(borrow)]
@@ -46,15 +46,15 @@ pub struct Translator<'a, 'b> {
 
 	#[serde(skip)]
 	extension: Option<fn(
-		text: &'b str,
+		text: &'a str,
 		num: Option<i64>,
-		formatting: Option<&'b HashMap<&'a str, &'a str>>,
+		formatting: Option<&'a HashMap<&'a str, &'a str>>,
 		data: Option<&'a HashMap<&'a str, &'a str>>	
 	) -> String>
 }
 
-impl<'a, 'b> Translator<'a, 'b> {
-	pub fn add(&mut self, data: &'b DataOptions<'a>) {
+impl<'a> Translator<'a> {
+	pub fn add<'b>(&mut self, data: &'b DataOptions<'a>) {
 		if let Some(self_data) = &mut self.data {
 			if let Some(data_values) = &data.values {
 				match &mut self_data.values {
@@ -116,9 +116,9 @@ impl<'a, 'b> Translator<'a, 'b> {
 	pub fn extend(
 		&mut self, 
 		extension: fn(
-			text: &'b str,
+			text: &'a str,
 			num: Option<i64>,
-			formatting: Option<&'b HashMap<&'a str, &'a str>>,
+			formatting: Option<&'a HashMap<&'a str, &'a str>>,
 			data: Option<&'a HashMap<&'a str, &'a str>>
 		) -> String
 	) {
@@ -127,10 +127,10 @@ impl<'a, 'b> Translator<'a, 'b> {
 
 	pub fn translate(
 		&'a self,
-		text: &'b str,
-		default_num_or_formatting: Option<&'b NumOrFormatting<'a>>,
-		num_or_formatting_or_context: Option<&'b NumOrFormatting<'a>>,
-		formatting_or_context: Option<&'b HashMap<&'a str, &'a str>>
+		text: &'a str,
+		default_num_or_formatting: &'a Option<NumOrFormatting<'a>>,
+		num_or_formatting_or_context: &'a Option<NumOrFormatting<'a>>,
+		formatting_or_context: &'a Option<HashMap<&'a str, &'a str>>
 	) -> String {
 		let mut num = None;
 		let mut formatting = None;
@@ -165,7 +165,7 @@ impl<'a, 'b> Translator<'a, 'b> {
 			match &num_or_formatting_or_context_val {
 				NumOrFormatting::Number(default_num) => {
 					num = Some(*default_num);
-					formatting = formatting_or_context;
+					formatting = formatting_or_context.as_ref();
 				},
 				&NumOrFormatting::Formatting(default_formatting) => {
 					formatting = Some(default_formatting);
@@ -182,10 +182,10 @@ impl<'a, 'b> Translator<'a, 'b> {
 
 	pub fn translate_text(
 		&'a self, 
-		text: &'b str,
+		text: &'a str,
 		num: Option<i64>,
-		formatting: Option<&'b HashMap<&'a str, &'a str>>,
-		context: &'b HashMap<&'a str, &'a str>
+		formatting: Option<&'a HashMap<&'a str, &'a str>>,
+		context: &'a HashMap<&'a str, &'a str>
 	) -> String {
 		match &self.data {
 			Some(data) => {
@@ -220,9 +220,9 @@ impl<'a, 'b> Translator<'a, 'b> {
 
 	pub fn find_translation(
 		&self,
-		text: &'b str,
+		text: &'a str,
 		num: Option<i64>,
-		formatting: Option<&'b HashMap<&'a str, &'a str>>,
+		formatting: Option<&'a HashMap<&'a str, &'a str>>,
 		data: Option<&'a HashMap<&'a str, Value>>
 	) -> Option<String> {
 		let value = data?.get(text)?;
@@ -284,7 +284,7 @@ impl<'a, 'b> Translator<'a, 'b> {
 		}
 	}
 
-	pub fn create(data: &'b DataOptions<'a>) -> Translator<'a, 'b> {
+	pub fn create<'b>(data: &'b DataOptions<'a>) -> Translator<'a> {
 		let mut translator = Translator {
 			data: None,
 			global_context: HashMap::new(),
@@ -315,7 +315,7 @@ pub fn apply_formatting<'a>(text: &'a str, formatting: Option<&'a HashMap<&'a st
 	return text;
 }
 
-pub fn get_context_data<'a, 'b>(data: &'a DataOptions<'a>, context: &'b HashMap<&'a str, &'a str>) -> Option<&'a ContextOptions<'a>> {
+pub fn get_context_data<'a>(data: &'a DataOptions<'a>, context: &'a HashMap<&'a str, &'a str>) -> Option<&'a ContextOptions<'a>> {
 	for ctx in data.contexts.as_ref()? {
 		let mut equal = true;
 
